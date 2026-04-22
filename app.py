@@ -1,59 +1,63 @@
 import streamlit as st
 import yt_dlp
 import os
-import glob
+import io
 
-st.set_page_config(page_title="YT Downloader", page_icon="🎬")
+# --- UI SETUP ---
+st.set_page_config(page_title="Ultimate YT Downloader", page_icon="📽️")
 
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; color: white; }
-    .stTextInput > div > div > input { background-color: #262730; color: white; border: 1px solid #444; }
+    .main { background: #0e1117; }
+    .stButton>button { width: 100%; background-color: #ff4b4b; color: white; border-radius: 8px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🎬 YT to MP4 Downloader")
-st.write("Paste the link and wait for the magic.")
+st.title("📽️ YT to MP4 Downloader")
+st.write("Sederhana, cepat, dan bypass 403.")
 
-url = st.text_input("Enter YouTube URL:", placeholder="https://www.youtube.com/watch?v=...")
+url = st.text_input("Paste YouTube URL:", placeholder="https://www.youtube.com/watch?v=...")
 
 if url:
-    if st.button("Start Download & Convert"):
+    if st.button("Download Now"):
         try:
-            with st.spinner("Downloading and processing... this may take a minute."):
-                # Setup options
-                ydl_opts = {
-    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-    'merge_output_format': 'mp4',
-    'outtmpl': 'downloaded_video.%(ext)s',
-    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'quiet': True,
-    'no_warnings': True,
-}
+            # Bersihkan file sisa
+            for f in os.listdir():
+                if f.endswith(".mp4") or f.endswith(".webm"):
+                    os.remove(f)
 
-                # Clear previous downloads
-                if os.path.exists("downloaded_video.mp4"):
-                    os.remove("downloaded_video.mp4")
+            with st.spinner("Processing... harap bersabar."):
+                ydl_opts = {
+                    'format': 'bestvideo+bestaudio/best',
+                    'merge_output_format': 'mp4',
+                    'outtmpl': 'video_result.%(ext)s',
+                    'cookiefile': 'cookies.txt',  # Kunci utama tembus blokir
+                    'postprocessors': [{
+                        'key': 'FFmpegVideoConvertor',
+                        'preferedformat': 'mp4',
+                    }],
+                    'noplaylist': True,
+                    'quiet': True,
+                }
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
 
-                # Check if file exists
-                if os.path.exists("downloaded_video.mp4"):
-                    with open("downloaded_video.mp4", "rb") as file:
-                        st.success("Conversion Finished!")
+                # Cari file hasil merge mp4
+                if os.path.exists("video_result.mp4"):
+                    with open("video_result.mp4", "rb") as f:
+                        st.success("Download Selesai!")
                         st.download_button(
-                            label="💾 DOWNLOAD MP4",
-                            data=file,
-                            file_name="video_result.mp4",
-                            mime="video/mp4",
-                            use_container_width=True
+                            label="💾 SAVE TO DEVICE",
+                            data=f,
+                            file_name="youtube_video.mp4",
+                            mime="video/mp4"
                         )
                 else:
-                    st.error("File was not found after processing.")
+                    st.error("Gagal menggabungkan file. Pastikan packages.txt berisi ffmpeg.")
 
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"Waduh Error: {str(e)}")
 
 st.divider()
-st.caption("Note: High-resolution videos (4K) might take longer to process on Streamlit Cloud.")
+st.caption("Pastikan cookies.txt di GitHub masih aktif.")
