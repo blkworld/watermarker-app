@@ -2,35 +2,39 @@ import streamlit as st
 import yt_dlp
 import os
 
-# --- UI SETTINGS ---
-st.set_page_config(page_title="YT Downloader", layout="centered")
+# --- UI MINIMALIS ---
+st.set_page_config(page_title="YT Downloader Pro", layout="centered")
 
 st.markdown("""
     <style>
     .main { background-color: #0e1117; }
-    .stButton>button { width: 100%; background-color: #ff4b4b; color: white; height: 3em; font-weight: bold; }
+    .stButton>button { width: 100%; background-color: #ff4b4b; color: white; height: 3.5em; font-weight: bold; border: none; }
+    .stInput>div>div>input { background-color: #1a1c23; color: white; }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("📽️ YT to MP4 Downloader")
-st.write("Sederhana, cepat, dan bypass 403.")
+st.write("Versi Bandel: Ambil kualitas terbaik & paksa jadi MP4.")
 
 url = st.text_input("Paste YouTube URL:", placeholder="https://www.youtube.com/watch?v=...")
 
 if url:
-    if st.button("Download Now"):
+    if st.button("DOWNLOAD NOW"):
         try:
-            # Hapus file lama biar gak numpuk
-            if os.path.exists("video.mp4"): os.remove("video.mp4")
+            # Hapus file sampah sebelumnya
+            output_file = "video_final.mp4"
+            if os.path.exists(output_file):
+                os.remove(output_file)
 
-            with st.spinner("Lagi diproses, tunggu bentar..."):
+            with st.spinner("Sikat! Lagi diproses..."):
                 ydl_opts = {
-                    # Ambil yang terbaik, gausah pilih-pilih format di awal
+                    # 'best' saja tanpa embel-embel agar tidak pilih-pilih format di awal
                     'format': 'bestvideo+bestaudio/best',
-                    'merge_output_format': 'mp4',
-                    'outtmpl': 'video.%(ext)s',
-                    'cookiefile': 'cookies.txt',  # Pake cookies biar gak 403
+                    'outtmpl': 'video_temp.%(ext)s',
+                    'cookiefile': 'cookies.txt', # Pake cookies biar gak 403
+                    'noplaylist': True,
                     'quiet': True,
+                    # KUNCI UTAMA: Paksa FFmpeg ubah apa pun hasilnya jadi MP4
                     'postprocessors': [{
                         'key': 'FFmpegVideoConvertor',
                         'preferedformat': 'mp4',
@@ -38,19 +42,26 @@ if url:
                 }
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    # Download dan biarkan post-processor merubah namanya jadi .mp4
                     ydl.download([url])
-
-                if os.path.exists("video.mp4"):
-                    with open("video.mp4", "rb") as f:
-                        st.success("Selesai!")
+                
+                # Cari file hasil konversi (biasanya namanya jadi video_temp.mp4)
+                final_path = "video_temp.mp4"
+                
+                if os.path.exists(final_path):
+                    with open(final_path, "rb") as f:
+                        st.success("BERHASIL! Sikat bosku.")
                         st.download_button(
-                            label="💾 SAVE TO DEVICE",
+                            label="💾 KLIK UNTUK SIMPAN VIDEO",
                             data=f,
-                            file_name="video_result.mp4",
+                            file_name="youtube_download.mp4",
                             mime="video/mp4"
                         )
                 else:
-                    st.error("File gagal dibuat. Cek apakah ffmpeg sudah diinstall di packages.txt")
+                    st.error("File MP4 tidak terbentuk. Pastikan 'ffmpeg' ada di packages.txt")
 
         except Exception as e:
             st.error(f"Waduh Error: {str(e)}")
+
+st.divider()
+st.caption("Kalau masih error, cek apakah linknya private atau cookies.txt sudah expired.")
