@@ -23,10 +23,13 @@ if url:
             with st.spinner("Downloading and processing... this may take a minute."):
                 # Setup options
                 ydl_opts = {
-                    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-                    'merge_output_format': 'mp4',
-                    'outtmpl': 'downloaded_video.%(ext)s', # Fix name to make it easy to find
-                }
+    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+    'merge_output_format': 'mp4',
+    'outtmpl': 'downloaded_video.%(ext)s',
+    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'quiet': True,
+    'no_warnings': True,
+}
 
                 # Clear previous downloads
                 if os.path.exists("downloaded_video.mp4"):
