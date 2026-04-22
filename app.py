@@ -3,25 +3,25 @@ from PIL import Image, ImageDraw, ImageFont, ImageEnhance, ImageChops
 import numpy as np
 
 def apply_blend(base, watermark_layer, mode):
-    # Pisahkan RGB dan Alpha dari layer watermark
+    # Separate RGB and Alpha from the watermark layer
     w_rgb = watermark_layer.convert("RGB")
     w_alpha = watermark_layer.split()[3]
     
     if mode == "Normal":
         return Image.alpha_composite(base, watermark_layer)
-    elif mode == "Multiply (Gelap)":
+    elif mode == "Multiply":
         blended_rgb = ImageChops.multiply(base.convert("RGB"), w_rgb)
-    elif mode == "Screen (Terang)":
+    elif mode == "Screen":
         blended_rgb = ImageChops.screen(base.convert("RGB"), w_rgb)
-    elif mode == "Overlay (Kontras)":
-        # Overlay butuh trik manual sedikit di Pillow
+    elif mode == "Overlay":
+        # Overlay logic for Pillow
         blended_rgb = Image.blend(base.convert("RGB"), ImageChops.soft_light(base.convert("RGB"), w_rgb), 0.5)
     elif mode == "Difference":
         blended_rgb = ImageChops.difference(base.convert("RGB"), w_rgb)
     else:
         return Image.alpha_composite(base, watermark_layer)
 
-    # Kembalikan ke RGBA menggunakan alpha asli watermark sebagai mask
+    # Re-apply alpha channel to the blended result
     blended_rgba = blended_rgb.convert("RGBA")
     blended_rgba.putalpha(w_alpha)
     return Image.alpha_composite(base, blended_rgba)
@@ -31,11 +31,12 @@ def add_watermark(base_image, watermark_type, watermark_content, opacity, angle,
     width, height = base.size
     txt_layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
     
-    # Hitung jarak antar watermark (tiling)
+    # Calculate tiling spacing
     step = int(max(width, height) / 4) 
 
     if watermark_type == "Text":
         try:
+            # You can upload a .ttf file to your repo to use a specific font
             font = ImageFont.truetype("arial.ttf", size)
         except:
             font = ImageFont.load_default()
@@ -67,28 +68,28 @@ def add_watermark(base_image, watermark_type, watermark_content, opacity, angle,
 
     return apply_blend(base, txt_layer, blend_mode).convert("RGB")
 
-# --- UI STREAMLIT ---
+# --- STREAMLIT UI ---
 st.set_page_config(page_title="Watermarker Pro", layout="wide")
-st.title("📸 Watermarker No Ribet - Blend Edition")
+st.title("📸 Professional Watermarker")
 
 with st.sidebar:
-    st.header("⚙️ Pengaturan")
-    mode = st.radio("Tipe Watermark:", ["Text", "Image"])
+    st.header("⚙️ Settings")
+    mode = st.radio("Watermark Type:", ["Text", "Image"])
     
     if mode == "Text":
-        content = st.text_input("Isi Teks:", "CONFIDENTIAL")
+        content = st.text_input("Enter Text:", "CONFIDENTIAL")
     else:
-        content = st.file_uploader("Upload Logo:", type=['png', 'jpg', 'jpeg'])
+        content = st.file_uploader("Upload Logo (PNG recommended):", type=['png', 'jpg', 'jpeg'])
     
     st.divider()
     blend_mode = st.selectbox("Blend Mode:", 
-                              ["Normal", "Multiply (Gelap)", "Screen (Terang)", "Overlay (Kontras)", "Difference"])
+                              ["Normal", "Multiply", "Screen", "Overlay", "Difference"])
     
     opacity = st.slider("Opacity:", 0.0, 1.0, 0.3)
-    angle = st.slider("Rotasi:", 0, 360, 45)
-    size = st.slider("Ukuran:", 10, 800, 100)
+    angle = st.slider("Rotation (Degrees):", 0, 360, 45)
+    size = st.slider("Size:", 10, 800, 100)
 
-uploaded_file = st.file_uploader("Upload Foto Utama:", type=['jpg', 'jpeg', 'png'])
+uploaded_file = st.file_uploader("Upload Main Photo:", type=['jpg', 'jpeg', 'png'])
 
 if uploaded_file:
     img = Image.open(uploaded_file)
@@ -96,11 +97,11 @@ if uploaded_file:
     
     col1, col2 = st.columns(2)
     with col1:
-        st.image(img, caption="Original", use_container_width=True)
+        st.image(img, caption="Original Photo", use_container_width=True)
     with col2:
-        st.image(result, caption=f"Hasil ({blend_mode})", use_container_width=True)
+        st.image(result, caption=f"Result ({blend_mode} Mode)", use_container_width=True)
         
         import io
         buf = io.BytesIO()
         result.save(buf, format="JPEG", quality=95)
-        st.download_button("💾 Download Hasil", buf.getvalue(), "watermarked.jpg", "image/jpeg")
+        st.download_button("💾 Download Result", buf.getvalue(), "watermarked.jpg", "image/jpeg")
