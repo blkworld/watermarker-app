@@ -1,15 +1,14 @@
 import streamlit as st
 import yt_dlp
 import os
-import io
 
-# --- UI SETUP ---
-st.set_page_config(page_title="Ultimate YT Downloader", page_icon="📽️")
+# --- UI SETTINGS ---
+st.set_page_config(page_title="YT Downloader", layout="centered")
 
 st.markdown("""
     <style>
-    .main { background: #0e1117; }
-    .stButton>button { width: 100%; background-color: #ff4b4b; color: white; border-radius: 8px; }
+    .main { background-color: #0e1117; }
+    .stButton>button { width: 100%; background-color: #ff4b4b; color: white; height: 3em; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -21,43 +20,37 @@ url = st.text_input("Paste YouTube URL:", placeholder="https://www.youtube.com/w
 if url:
     if st.button("Download Now"):
         try:
-            # Bersihkan file sisa
-            for f in os.listdir():
-                if f.endswith(".mp4") or f.endswith(".webm"):
-                    os.remove(f)
+            # Hapus file lama biar gak numpuk
+            if os.path.exists("video.mp4"): os.remove("video.mp4")
 
-            with st.spinner("Processing... harap bersabar."):
+            with st.spinner("Lagi diproses, tunggu bentar..."):
                 ydl_opts = {
+                    # Ambil yang terbaik, gausah pilih-pilih format di awal
                     'format': 'bestvideo+bestaudio/best',
                     'merge_output_format': 'mp4',
-                    'outtmpl': 'video_result.%(ext)s',
-                    'cookiefile': 'cookies.txt',  # Kunci utama tembus blokir
+                    'outtmpl': 'video.%(ext)s',
+                    'cookiefile': 'cookies.txt',  # Pake cookies biar gak 403
+                    'quiet': True,
                     'postprocessors': [{
                         'key': 'FFmpegVideoConvertor',
                         'preferedformat': 'mp4',
                     }],
-                    'noplaylist': True,
-                    'quiet': True,
                 }
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
 
-                # Cari file hasil merge mp4
-                if os.path.exists("video_result.mp4"):
-                    with open("video_result.mp4", "rb") as f:
-                        st.success("Download Selesai!")
+                if os.path.exists("video.mp4"):
+                    with open("video.mp4", "rb") as f:
+                        st.success("Selesai!")
                         st.download_button(
                             label="💾 SAVE TO DEVICE",
                             data=f,
-                            file_name="youtube_video.mp4",
+                            file_name="video_result.mp4",
                             mime="video/mp4"
                         )
                 else:
-                    st.error("Gagal menggabungkan file. Pastikan packages.txt berisi ffmpeg.")
+                    st.error("File gagal dibuat. Cek apakah ffmpeg sudah diinstall di packages.txt")
 
         except Exception as e:
             st.error(f"Waduh Error: {str(e)}")
-
-st.divider()
-st.caption("Pastikan cookies.txt di GitHub masih aktif.")
